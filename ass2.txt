@@ -1,0 +1,133 @@
+CREATE TABLE TIME_DIMENSION (
+    Time_ID INTEGER PRIMARY KEY,
+    Sale_Date TEXT,
+    Month INTEGER,
+    Quarter INTEGER,
+    Year INTEGER
+);
+
+CREATE TABLE PRODUCT (
+    Product_ID INTEGER PRIMARY KEY,
+    Product_Name TEXT,
+    Category TEXT
+);
+
+CREATE TABLE CUSTOMER (
+    Customer_ID INTEGER PRIMARY KEY,
+    Customer_Name TEXT,
+    City TEXT
+);
+
+CREATE TABLE STORE (
+    Store_ID INTEGER PRIMARY KEY,
+    Store_Name TEXT,
+    City TEXT
+);
+
+CREATE TABLE SALES_FACT (
+    Sale_ID INTEGER PRIMARY KEY,
+    Time_ID INTEGER,
+    Product_ID INTEGER,
+    Customer_ID INTEGER,
+    Store_ID INTEGER,
+    Quantity INTEGER,
+    Sales_Amount REAL,
+    FOREIGN KEY (Time_ID) REFERENCES TIME_DIMENSION(Time_ID),
+    FOREIGN KEY (Product_ID) REFERENCES PRODUCT(Product_ID),
+    FOREIGN KEY (Customer_ID) REFERENCES CUSTOMER(Customer_ID),
+    FOREIGN KEY (Store_ID) REFERENCES STORE(Store_ID)
+);
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+INSERT INTO TIME_DIMENSION VALUES
+(1, '2026-01-05', 1, 1, 2026),
+(2, '2026-01-10', 1, 1, 2026),
+(3, '2026-02-12', 2, 1, 2026),
+(4, '2026-02-20', 2, 1, 2026),
+(5, '2026-03-05', 3, 1, 2026),
+(6, '2026-03-15', 3, 1, 2026),
+(7, '2026-03-20', 3, 1, 2026),
+(8, '2026-04-02', 4, 2, 2026);
+
+INSERT INTO PRODUCT VALUES
+(1, 'Mouse', 'Electronics'),
+(2, 'Shirt', 'Clothing'),
+(3, 'Jeans', 'Clothing'),
+(4, 'Keyboard', 'Electronics'),
+(5, 'Rice', 'Grocery');
+
+INSERT INTO CUSTOMER VALUES
+(1, 'Aarav', 'Pune'),
+(2, 'Diya', 'Mumbai'),
+(3, 'Rohan', 'Pune'),
+(4, 'Ananya', 'Nashik'),
+(5, 'Ishaan', 'Mumbai');
+
+INSERT INTO STORE VALUES
+(1, 'Pune Central', 'Pune'),
+(2, 'Mumbai Central', 'Mumbai'),
+(3, 'Nashik Central', 'Nashik');
+
+INSERT INTO SALES_FACT VALUES
+(1, 1, 1, 1, 1, 2, 1000),
+(2, 2, 2, 2, 2, 3, 2400),
+(3, 3, 3, 3, 1, 2, 2400),
+(4, 4, 4, 4, 3, 1, 1500),
+(5, 5, 1, 5, 2, 4, 2000),
+(6, 6, 5, 1, 1, 5, 500),
+(7, 7, 2, 4, 3, 2, 1600),
+(8, 8, 5, 2, 2, 10, 1000);
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+CREATE VIEW RETAIL_SALES_VIEW AS
+SELECT
+    f.Sale_ID,
+    t.Sale_Date,
+    t.Month,
+    t.Quarter,
+    t.Year,
+    p.Product_Name,
+    p.Category,
+    c.Customer_Name,
+    c.City AS Customer_City,
+    s.Store_Name,
+    s.City AS Store_City,
+    f.Quantity,
+    f.Sales_Amount
+FROM SALES_FACT f
+JOIN TIME_DIMENSION t ON f.Time_ID = t.Time_ID
+JOIN PRODUCT p ON f.Product_ID = p.Product_ID
+JOIN CUSTOMER c ON f.Customer_ID = c.Customer_ID
+JOIN STORE s ON f.Store_ID = s.Store_ID;
+
+SELECT * FROM RETAIL_SALES_VIEW;
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#Roll up
+SELECT Year, Quarter,
+       SUM(Sales_Amount) AS Total_Sales
+FROM RETAIL_SALES_VIEW
+GROUP BY Year, Quarter;
+
+#Drill Down
+SELECT Year, Month, Category,
+       SUM(Sales_Amount) AS Total_Sales
+FROM RETAIL_SALES_VIEW
+GROUP BY Year, Month, Category
+ORDER BY Year, Month;
+
+#Slice
+SELECT *
+FROM RETAIL_SALES_VIEW
+WHERE Month = 3;
+
+#Dice
+SELECT Category, Customer_City,
+       SUM(Sales_Amount) AS Total_Sales
+FROM RETAIL_SALES_VIEW
+WHERE Category IN ('Electronics', 'Clothing')
+  AND Customer_City IN ('Pune', 'Mumbai')
+GROUP BY Category, Customer_City;
